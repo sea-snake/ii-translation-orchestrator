@@ -79,23 +79,29 @@ For each unaddressed comment:
 
 ## Step 2b: Create a new PR for fixes to a merged PR
 
-You cannot push to a merged branch. Instead:
+You cannot push to a merged branch. Instead, route the fix into the combined translation branch:
 
-1. From the latest default branch, create a branch `$BRANCH_PREFIX-<lang>`. If that branch already exists as an open PR, add the fix there instead of opening another.
+1. Check if `$BRANCH_PREFIX` is already open as a PR on `$TARGET_REPO`. If yes, add the fix as a new commit on that PR's branch instead of opening another (fetch the branch from `fork`, apply the fix, push).
 
-2. Apply the requested fix(es).
+2. If no combined PR is open, create a branch `$BRANCH_PREFIX` from the latest default branch.
 
-3. Run extract/format if configured, stage only the relevant file, commit.
+3. Apply the requested fix(es) to the relevant translation file(s). Multiple languages may be fixed together — they all share the same branch.
 
-4. Push to the **fork** and create a PR **from fork to upstream**:
+4. Run extract/format if configured, stage only the relevant translation file(s), commit.
+
+5. Push to the **fork**:
    ```
-   git push fork HEAD:$BRANCH_PREFIX-<lang>
-   gh pr create --repo $TARGET_REPO --head "$BOT_ORG:$BRANCH_PREFIX-<lang>" --base main ...
+   git push fork HEAD:$BRANCH_PREFIX
    ```
 
-5. Add reviewers from `$DEFAULT_REVIEWERS` (and language-specific from `$LANGUAGE_REVIEWERS`).
+6. If a combined PR is already open, the push updates it — no new PR needed. Otherwise create a PR **from fork to upstream**:
+   ```
+   gh pr create --repo $TARGET_REPO --head "$BOT_ORG:$BRANCH_PREFIX" --base main ...
+   ```
 
-6. Reply to each original comment on the merged PR with a link to the new PR.
+7. Add reviewers from `$DEFAULT_REVIEWERS` plus the language-specific reviewers from `$LANGUAGE_REVIEWERS` for any language touched by this fix.
+
+8. Reply to each original comment on the merged PR with a link to the open/new combined PR.
 
 ## Step 3: Classify each comment
 
