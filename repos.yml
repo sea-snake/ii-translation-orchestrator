@@ -24,7 +24,9 @@ repos:
     setup: npm install
     extract: npm run extract
     format: npm run format
-    # Git branch / PR naming
+    # Git branch / PR naming.
+    # branch_prefix is the branch name for the combined translation PR (used as-is),
+    # and is also the base for derived branches like `<prefix>-context` for context audits.
     branch_prefix: chore/translate
     pr_title_prefix: "chore(fe):"
     # Enable weekly context-audit sweeps (adds translator context to source files)

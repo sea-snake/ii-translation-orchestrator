@@ -1,6 +1,7 @@
 name: Translate
 
-# Checks all managed repos for missing translations and creates per-language PRs.
+# Checks all managed repos for missing translations and creates a single
+# combined PR per repo covering every language that needs an update.
 on:
   schedule:
     - cron: "0 * * * *" # hourly — precheck skips if nothing is missing
@@ -65,9 +66,16 @@ jobs:
           set -euo pipefail
           needs_run=false
 
-          # Get open PR branches from the bot to skip those languages
+          # If a combined translation PR is already open, skip — the feedback
+          # workflow handles updates to that PR.
           open_branches=$(gh pr list --repo "$REPO" --state open --author "$BOT_USER" \
             --json headRefName --jq '.[].headRefName' 2>/dev/null || true)
+          if echo "$open_branches" | grep -qx "$BRANCH_PREFIX"; then
+            echo "Combined translation PR already open on branch $BRANCH_PREFIX — skipping"
+            echo "needs_run=false" >> "$GITHUB_OUTPUT"
+            echo "${{ matrix.repo.repo }}: needs_run=false (PR already open)"
+            exit 0
+          fi
 
           case "$FILE_FORMAT" in
             po)
@@ -75,10 +83,6 @@ jobs:
                 [ -f "$f" ] || continue
                 lang=$(basename "$f" .po)
                 [ "$lang" = "$SOURCE_LANGUAGE" ] && continue
-                # Skip if there's already an open PR for this language
-                if echo "$open_branches" | grep -qx "${BRANCH_PREFIX}-${lang}"; then
-                  continue
-                fi
                 # Check for empty msgstr (skip header entry)
                 if awk '/^msgid ""$/{skip=1;next}/^msgid /{skip=0}{if(!skip)print}' "$f" \
                     | grep -q '^msgstr ""$'; then
@@ -95,9 +99,6 @@ jobs:
                 [ -f "$f" ] || continue
                 lang=$(basename "$f" .json)
                 [ "$lang" = "$SOURCE_LANGUAGE" ] && continue
-                if echo "$open_branches" | grep -qx "${BRANCH_PREFIX}-${lang}"; then
-                  continue
-                fi
                 # Check for missing or empty keys
                 file_keys=$(jq -r 'to_entries[] | select(.value == "" or .value == null) | .key' "$f")
                 missing=$(comm -23 <(echo "$src_keys") <(jq -r 'keys[]' "$f" | sort))
