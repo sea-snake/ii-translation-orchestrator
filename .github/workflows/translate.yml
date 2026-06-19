@@ -4,7 +4,7 @@ name: Translate
 # combined PR per repo covering every language that needs an update.
 on:
   schedule:
-    - cron: "0 * * * *" # hourly — precheck skips if nothing is missing
+    - cron: "*/15 * * * *"   # Runs every 15 minutes
   workflow_dispatch:
     inputs:
       target_repo:
